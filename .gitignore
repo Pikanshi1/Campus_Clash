@@ -35,3 +35,10 @@ Thumbs.db
 # IDE
 .vscode/
 .idea/
+
+.windsurf/
+.claude/
+.agents/
+AGENTS.md
+CLAUDE.md
+
