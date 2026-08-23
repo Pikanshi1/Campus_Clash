@@ -41,4 +41,5 @@ Thumbs.db
 .agents/
 AGENTS.md
 CLAUDE.md
+dist/
 

@@ -9,6 +9,7 @@ import {
   Target,
   LogOut,
 } from "lucide-react";
+import { API_BASE_URL } from "@/lib/api";
 
 interface User {
   id: string;
@@ -39,7 +40,7 @@ export default function DashboardPage() {
 
       try {
         const response = await fetch(
-          `${process.env.NEXT_PUBLIC_API_URL}/auth/me`,
+          `${API_BASE_URL}/auth/me`,
           {
             headers: {
               Authorization: `Bearer ${token}`,
@@ -84,7 +85,7 @@ export default function DashboardPage() {
 
   return (
     <main className="min-h-screen bg-[#07070d] text-white">
-      <nav className="border-b border-white/10 bg-white/[0.02] px-5 py-4">
+      <nav className="border-b border-white/10 bg-white/2 px-5 py-4">
         <div className="mx-auto flex max-w-7xl items-center justify-between">
           <div className="flex items-center gap-3">
             <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-violet-500">
@@ -146,7 +147,7 @@ export default function DashboardPage() {
         </div>
 
         <div className="mt-8 grid gap-6 lg:grid-cols-[1.5fr_1fr]">
-          <section className="rounded-3xl border border-white/10 bg-white/[0.04] p-6 sm:p-8">
+          <section className="rounded-3xl border border-white/10 bg-white/4 p-6 sm:p-8">
             <p className="text-sm font-medium text-violet-400">
               Featured Arena
             </p>
@@ -169,7 +170,7 @@ export default function DashboardPage() {
             </button>
           </section>
 
-          <section className="rounded-3xl border border-white/10 bg-white/[0.04] p-6 sm:p-8">
+          <section className="rounded-3xl border border-white/10 bg-white/4 p-6 sm:p-8">
             <h2 className="text-lg font-semibold">
               Your Progress
             </h2>
@@ -221,7 +222,7 @@ function StatCard({
   value: number;
 }) {
   return (
-    <div className="rounded-2xl border border-white/10 bg-white/[0.04] p-5">
+    <div className="rounded-2xl border border-white/10 bg-white/4 p-5">
       <div className="flex items-center gap-3 text-violet-400">
         {icon}
         <span className="text-sm text-white/40">

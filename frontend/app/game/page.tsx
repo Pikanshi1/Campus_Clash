@@ -2,86 +2,100 @@
 
 import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
+import { socket } from "@/lib/socket";
 
-const GAME_WIDTH = 900;
-const GAME_HEIGHT = 600;
+const WIDTH = 1200;
+const HEIGHT = 700;
 
-interface Player {
+interface Vector {
   x: number;
   y: number;
-  size: number;
-  speed: number;
 }
 
-interface Orb {
-  x: number;
-  y: number;
-  size: number;
+interface Player {
+  id: string;
+  username: string;
+  position: Vector;
+  health: number;
+  maxHealth: number;
+  score: number;
+  kills: number;
+  deaths: number;
+  streak: number;
+  color: string;
+  shieldUntil: number;
+  respawnAt: number | null;
 }
 
 interface Enemy {
-  x: number;
-  y: number;
-  size: number;
-  speed: number;
+  id: string;
+  type: "chaser" | "tank" | "shooter";
+  position: Vector;
+  health: number;
+  maxHealth: number;
 }
 
 interface Projectile {
+  id: string;
+  ownerId: string;
+  position: Vector;
+  velocity: Vector;
+  radius: number;
+  color: string;
+}
+
+interface Pickup {
+  id: string;
+  type: "energy" | "shield" | "health";
+  position: Vector;
+  radius: number;
+  value: number;
+}
+
+interface Obstacle {
   x: number;
   y: number;
-  dx: number;
-  dy: number;
-  speed: number;
-  size: number;
+  width: number;
+  height: number;
+}
+
+interface GameState {
+  id: string;
+  status: string;
+  wave: number;
+  endsAt: number;
+  players: Player[];
+  enemies: Enemy[];
+  projectiles: Projectile[];
+  pickups: Pickup[];
+  obstacles: Obstacle[];
 }
 
 export default function GamePage() {
   const router = useRouter();
 
-  const projectiles = useRef<Projectile[]>([]);
-
   const canvasRef = useRef<HTMLCanvasElement>(null);
 
   const keys = useRef<Record<string, boolean>>({});
 
-  const player = useRef<Player>({
-    x: GAME_WIDTH / 2,
-    y: GAME_HEIGHT / 2,
-    size: 20,
-    speed: 5,
+  const mouse = useRef<Vector>({
+    x: WIDTH / 2,
+    y: HEIGHT / 2,
+  });
+  const facing = useRef<Vector>({
+    x: 1,
+    y: 0,
   });
 
-  const orb = useRef<Orb>({
-    x: 200,
-    y: 200,
-    size: 10,
-  });
+  const [game, setGame] = useState<GameState | null>(null);
 
-  const enemies = useRef<Enemy[]>([
-    {
-      x: 100,
-      y: 100,
-      size: 18,
-      speed: 1.5,
-    },
-    {
-      x: 800,
-      y: 500,
-      size: 18,
-      speed: 1.8,
-    },
-  ]);
+  const [now, setNow] = useState(() => Date.now());
 
-  const health = useRef(100);
+  const [connected, setConnected] = useState(false);
 
-  const [displayHealth, setDisplayHealth] = useState(100);
-  const [gameOver, setGameOver] = useState(false);
+  const [finished, setFinished] = useState(false);
 
-  const score = useRef(0);
-
-  const [displayScore, setDisplayScore] = useState(0);
-  const [timeLeft, setTimeLeft] = useState(60);
-  const gameOverRef = useRef(false);
+  const [winner, setWinner] = useState<Player | null>(null);
 
   useEffect(() => {
     const token = localStorage.getItem("campus_clash_token");
@@ -91,494 +105,717 @@ export default function GamePage() {
       return;
     }
 
-    const canvas = canvasRef.current;
+    const storedUsername = localStorage.getItem("campus_clash_username");
 
-    if (!canvas) return;
+    socket.connect();
 
-    const context = canvas.getContext("2d");
+    const onConnect = () => {
+      setConnected(true);
 
-    if (!context) {
-      return;
-    }
-
-    const ctx: CanvasRenderingContext2D = context;
-
-    canvas.width = GAME_WIDTH;
-    canvas.height = GAME_HEIGHT;
-
-    const handleKeyDown = (event: KeyboardEvent) => {
-      keys.current[event.key.toLowerCase()] = true;
-    };
-
-    const handleKeyUp = (event: KeyboardEvent) => {
-      keys.current[event.key.toLowerCase()] = false;
-    };
-
-    const handleShoot = (event: KeyboardEvent) => {
-      if (event.code !== "Space") return;
-
-      if (gameOverRef.current) return;
-
-      const nearestEnemy = enemies.current.reduce<Enemy | null>(
-        (nearest, enemy) => {
-          if (!nearest) return enemy;
-
-          const currentDistance = Math.hypot(
-            player.current.x - enemy.x,
-            player.current.y - enemy.y,
-          );
-
-          const nearestDistance = Math.hypot(
-            player.current.x - nearest.x,
-            player.current.y - nearest.y,
-          );
-
-          return currentDistance < nearestDistance ? enemy : nearest;
-        },
-        null,
-      );
-
-      if (!nearestEnemy) return;
-
-      const dx = nearestEnemy.x - player.current.x;
-
-      const dy = nearestEnemy.y - player.current.y;
-
-      const distance = Math.hypot(dx, dy);
-
-      if (distance === 0) return;
-
-      projectiles.current.push({
-        x: player.current.x,
-        y: player.current.y,
-        dx: dx / distance,
-        dy: dy / distance,
-        speed: 9,
-        size: 5,
+      socket.emit("join_game", {
+        username: storedUsername || "Player",
       });
     };
-    window.addEventListener("keydown", handleShoot);
 
-    window.addEventListener("keydown", handleKeyDown);
-    window.addEventListener("keyup", handleKeyUp);
+    const onConnectError = () => {
+      setConnected(false);
+    };
 
-    let animationId: number;
+    const onDisconnect = () => {
+      setConnected(false);
+    };
 
-    function spawnOrb() {
-      orb.current.x = 30 + Math.random() * (GAME_WIDTH - 60);
+    socket.on("connect", onConnect);
 
-      orb.current.y = 30 + Math.random() * (GAME_HEIGHT - 60);
-    }
+    socket.on("connect_error", onConnectError);
 
-    function update() {
-      if (gameOverRef.current) {
-        return;
+    socket.on("disconnect", onDisconnect);
+
+    const onState = (state: GameState) => {
+      setGame(state);
+
+      if (state.status === "running") {
+        setFinished(false);
+        setWinner(null);
       }
+    };
 
-      const p = player.current;
+    const onFinished = ({ winner }: { winner: Player | null }) => {
+      setWinner(winner);
+      setFinished(true);
+    };
 
-      if (keys.current["w"] || keys.current["arrowup"]) {
-        p.y -= p.speed;
-      }
+    socket.on("game_state", onState);
 
-      if (keys.current["s"] || keys.current["arrowdown"]) {
-        p.y += p.speed;
-      }
-
-      if (keys.current["a"] || keys.current["arrowleft"]) {
-        p.x -= p.speed;
-      }
-
-      if (keys.current["d"] || keys.current["arrowright"]) {
-        p.x += p.speed;
-      }
-
-      p.x = Math.max(p.size, Math.min(GAME_WIDTH - p.size, p.x));
-
-      p.y = Math.max(p.size, Math.min(GAME_HEIGHT - p.size, p.y));
-
-      const orbDx = p.x - orb.current.x;
-      const orbDy = p.y - orb.current.y;
-
-      const orbDistance = Math.sqrt(orbDx * orbDx + orbDy * orbDy);
-
-      if (orbDistance < p.size + orb.current.size) {
-        score.current += 10;
-        setDisplayScore(score.current);
-        spawnOrb();
-      }
-
-      for (const enemy of enemies.current) {
-        const enemyDx = p.x - enemy.x;
-        const enemyDy = p.y - enemy.y;
-
-        const enemyDistance = Math.sqrt(enemyDx * enemyDx + enemyDy * enemyDy);
-
-        if (enemyDistance > 0) {
-          enemy.x += (enemyDx / enemyDistance) * enemy.speed;
-
-          enemy.y += (enemyDy / enemyDistance) * enemy.speed;
-        }
-
-        if (enemyDistance < p.size + enemy.size) {
-          health.current -= 0.5;
-
-          setDisplayHealth(Math.max(0, Math.round(health.current)));
-
-          if (health.current <= 0) {
-            gameOverRef.current = true;
-            setGameOver(true);
-            return;
-          }
-        }
-      }
-      for (let i = projectiles.current.length - 1; i >= 0; i--) {
-        const projectile = projectiles.current[i];
-
-        projectile.x += projectile.dx * projectile.speed;
-
-        projectile.y += projectile.dy * projectile.speed;
-
-        if (
-          projectile.x < 0 ||
-          projectile.x > GAME_WIDTH ||
-          projectile.y < 0 ||
-          projectile.y > GAME_HEIGHT
-        ) {
-          projectiles.current.splice(i, 1);
-          continue;
-        }
-
-        for (let j = enemies.current.length - 1; j >= 0; j--) {
-          const enemy = enemies.current[j];
-
-          const distance = Math.hypot(
-            projectile.x - enemy.x,
-            projectile.y - enemy.y,
-          );
-
-          if (distance < projectile.size + enemy.size) {
-            enemies.current.splice(j, 1);
-
-            projectiles.current.splice(i, 1);
-
-            score.current += 25;
-
-            setDisplayScore(score.current);
-
-            break;
-          }
-        }
-      }
-      if (enemies.current.length === 0) {
-        enemies.current.push(
-          {
-            x: Math.random() * GAME_WIDTH,
-            y: Math.random() * GAME_HEIGHT,
-            size: 18,
-            speed: 1.5 + Math.random(),
-          },
-          {
-            x: Math.random() * GAME_WIDTH,
-            y: Math.random() * GAME_HEIGHT,
-            size: 18,
-            speed: 1.5 + Math.random(),
-          },
-        );
-      }
-    }
-    function draw() {
-      ctx.clearRect(0, 0, GAME_WIDTH, GAME_HEIGHT);
-
-      ctx.fillStyle = "#09090f";
-
-      ctx.fillRect(0, 0, GAME_WIDTH, GAME_HEIGHT);
-
-      ctx.strokeStyle = "rgba(255,255,255,0.04)";
-
-      ctx.lineWidth = 1;
-
-      for (let x = 0; x < GAME_WIDTH; x += 40) {
-        ctx.beginPath();
-        ctx.moveTo(x, 0);
-        ctx.lineTo(x, GAME_HEIGHT);
-        ctx.stroke();
-      }
-
-      for (let y = 0; y < GAME_HEIGHT; y += 40) {
-        ctx.beginPath();
-        ctx.moveTo(0, y);
-        ctx.lineTo(GAME_WIDTH, y);
-        ctx.stroke();
-      }
-
-      ctx.beginPath();
-
-      ctx.arc(orb.current.x, orb.current.y, 20, 0, Math.PI * 2);
-
-      ctx.fillStyle = "rgba(168,85,247,0.15)";
-
-      ctx.fill();
-
-      ctx.beginPath();
-
-      ctx.arc(orb.current.x, orb.current.y, orb.current.size, 0, Math.PI * 2);
-
-      ctx.fillStyle = "#a855f7";
-
-      ctx.fill();
-
-      for (const enemy of enemies.current) {
-        ctx.beginPath();
-
-        ctx.arc(enemy.x, enemy.y, enemy.size + 10, 0, Math.PI * 2);
-
-        ctx.fillStyle = "rgba(239,68,68,0.12)";
-
-        ctx.fill();
-
-        ctx.beginPath();
-
-        ctx.arc(enemy.x, enemy.y, enemy.size, 0, Math.PI * 2);
-
-        ctx.fillStyle = "#ef4444";
-
-        ctx.fill();
-      }
-
-      for (const projectile of projectiles.current) {
-        ctx.beginPath();
-
-        ctx.arc(projectile.x, projectile.y, projectile.size, 0, Math.PI * 2);
-
-        ctx.fillStyle = "#facc15";
-
-        ctx.fill();
-      }
-
-      ctx.beginPath();
-
-      ctx.arc(player.current.x, player.current.y, 32, 0, Math.PI * 2);
-
-      ctx.fillStyle = "rgba(59,130,246,0.12)";
-
-      ctx.fill();
-
-      ctx.beginPath();
-
-      ctx.arc(
-        player.current.x,
-        player.current.y,
-        player.current.size,
-        0,
-        Math.PI * 2,
-      );
-
-      ctx.fillStyle = "#3b82f6";
-
-      ctx.fill();
-    }
-
-    function gameLoop() {
-      update();
-      draw();
-
-      if (!gameOverRef.current) {
-        animationId = requestAnimationFrame(gameLoop);
-      }
-    }
-
-    gameLoop();
+    socket.on("game_finished", onFinished);
 
     return () => {
-      cancelAnimationFrame(animationId);
+      socket.off("connect", onConnect);
 
-      window.removeEventListener("keydown", handleKeyDown);
+      socket.off("disconnect", onDisconnect);
 
-      window.removeEventListener("keyup", handleKeyUp);
-      window.removeEventListener("keyup", handleKeyUp);
+      socket.off("connect_error", onConnectError);
+
+      socket.off("game_state", onState);
+
+      socket.off("game_finished", onFinished);
+
+      socket.disconnect();
     };
   }, [router]);
 
   useEffect(() => {
-    const timer = setInterval(() => {
-      setTimeLeft((time) => {
-        if (time <= 1) {
-          clearInterval(timer);
+    const clock = window.setInterval(() => setNow(Date.now()), 250);
 
-          gameOverRef.current = true;
-          setGameOver(true);
-
-          return 0;
-        }
-
-        return time - 1;
-      });
-    }, 1000);
-
-    return () => clearInterval(timer);
+    return () => window.clearInterval(clock);
   }, []);
+
+  useEffect(() => {
+    const down = (event: KeyboardEvent) => {
+      keys.current[event.key.toLowerCase()] = true;
+    };
+
+    const up = (event: KeyboardEvent) => {
+      keys.current[event.key.toLowerCase()] = false;
+    };
+
+    window.addEventListener("keydown", down);
+
+    window.addEventListener("keyup", up);
+
+    return () => {
+      window.removeEventListener("keydown", down);
+
+      window.removeEventListener("keyup", up);
+    };
+  }, []);
+
+  useEffect(() => {
+    let frame = 0;
+
+    const update = () => {
+      if (!socket.connected) {
+        frame = requestAnimationFrame(update);
+
+        return;
+      }
+
+      let x = 0;
+      let y = 0;
+
+      if (keys.current["w"] || keys.current["arrowup"]) {
+        y -= 1;
+      }
+
+      if (keys.current["s"] || keys.current["arrowdown"]) {
+        y += 1;
+      }
+
+      if (keys.current["a"] || keys.current["arrowleft"]) {
+        x -= 1;
+      }
+
+      if (keys.current["d"] || keys.current["arrowright"]) {
+        x += 1;
+      }
+
+      socket.emit("move", {
+        x,
+        y,
+      });
+
+      frame = requestAnimationFrame(update);
+    };
+
+    update();
+
+    return () => cancelAnimationFrame(frame);
+  }, []);
+
+  useEffect(() => {
+  const handleKeyDown = (event: KeyboardEvent) => {
+    if (event.code !== "Space") return;
+
+    event.preventDefault();
+
+    if (!socket.connected) return;
+
+    socket.emit("shoot", {
+      x: facing.current.x,
+      y: facing.current.y,
+    });
+  };
+
+  window.addEventListener(
+    "keydown",
+    handleKeyDown
+  );
+
+  return () => {
+    window.removeEventListener(
+      "keydown",
+      handleKeyDown
+    );
+  };
+}, []);
+
+  useEffect(() => {
+    const canvas = canvasRef.current;
+
+    if (!canvas) return;
+
+    const ctx = canvas.getContext("2d");
+
+    if (!ctx) return;
+
+    const resize = () => {
+      const ratio = window.devicePixelRatio || 1;
+
+      canvas.width = WIDTH * ratio;
+
+      canvas.height = HEIGHT * ratio;
+
+      ctx.setTransform(ratio, 0, 0, ratio, 0, 0);
+    };
+
+    resize();
+
+    window.addEventListener("resize", resize);
+
+    return () => {
+      window.removeEventListener("resize", resize);
+    };
+  }, []);
+
+  useEffect(() => {
+    const canvas = canvasRef.current;
+
+    if (!canvas) return;
+
+    const ctx = canvas.getContext("2d");
+
+    if (!ctx) return;
+
+    let frame = 0;
+
+    const render = () => {
+      drawGame(ctx, game);
+
+      frame = requestAnimationFrame(render);
+    };
+
+    render();
+
+    return () => cancelAnimationFrame(frame);
+  }, [game]);
+
+  const handleMouseMove = (event: React.MouseEvent<HTMLCanvasElement>) => {
+    const rect = event.currentTarget.getBoundingClientRect();
+
+    mouse.current = {
+      x: ((event.clientX - rect.left) / rect.width) * WIDTH,
+
+      y: ((event.clientY - rect.top) / rect.height) * HEIGHT,
+    };
+
+    const player = game?.players.find((item) => item.id === socket.id);
+
+    if (player) {
+      const direction = {
+        x: mouse.current.x - player.position.x,
+        y: mouse.current.y - player.position.y,
+      };
+      const length = Math.hypot(direction.x, direction.y);
+
+      if (length > 0) {
+        facing.current = {
+          x: direction.x / length,
+          y: direction.y / length,
+        };
+      }
+    }
+  };
+
+  const shoot = () => {
+    socket.emit("shoot", mouse.current);
+  };
+
+  const currentPlayer = game?.players.find((player) => player.id === socket.id);
+
+  const timeLeft = game
+    ? Math.max(0, Math.ceil((game.endsAt - now) / 1000))
+    : 0;
 
   return (
     <main className="min-h-screen bg-[#050509] text-white">
-      {/* Header */}
+      <header className="border-b border-white/10 bg-white/2">
+        <div className="mx-auto flex max-w-350 items-center justify-between px-5 py-4">
+          <div>
+            <h1 className="text-lg font-bold">Campus Clash</h1>
 
-      <header className="border-b border-white/10 bg-white/[0.02]">
-        <div className="mx-auto flex max-w-6xl items-center justify-between px-4 py-4">
-          <button
-            onClick={() => router.push("/dashboard")}
-            className="text-sm text-white/50 transition hover:text-white"
-          >
-            ← Dashboard
-          </button>
+            <p className="text-xs text-white/40">Multiplayer Arena</p>
+          </div>
 
           <div className="flex items-center gap-6">
-            <div>
-              <p className="text-xs text-white/40">HEALTH</p>
+            <div className="text-center">
+              <p className="text-[10px] text-white/40">STATUS</p>
 
-              <p className="font-bold">{displayHealth}%</p>
+              <p
+                className={
+                  connected
+                    ? "font-bold text-green-400"
+                    : "font-bold text-red-400"
+                }
+              >
+                {connected ? "ONLINE" : "OFFLINE"}
+              </p>
             </div>
-            <div>
-              <p className="text-xs text-white/40">SCORE</p>
 
-              <p className="font-bold">{displayScore}</p>
+            <div className="text-center">
+              <p className="text-[10px] text-white/40">WAVE</p>
+
+              <p className="font-bold">{game?.wave ?? 1}</p>
             </div>
 
-            <div>
-              <p className="text-xs text-white/40">TIME</p>
+            <div className="text-center">
+              <p className="text-[10px] text-white/40">TIME</p>
 
               <p className="font-bold">{timeLeft}s</p>
             </div>
+
+            <button
+              onClick={() => router.push("/dashboard")}
+              className="rounded-xl bg-white/5 px-4 py-2 text-sm transition hover:bg-white/10"
+            >
+              Dashboard
+            </button>
           </div>
         </div>
       </header>
 
-      {/* Game */}
-
-      <section className="flex min-h-[calc(100vh-73px)] items-center justify-center px-3 py-6">
-        <div className="w-full max-w-[900px]">
-          <div className="mb-4">
-            <h1 className="text-xl font-bold">Campus Arena</h1>
+      <section className="mx-auto max-w-350 px-4 py-6">
+        <div className="mb-4 flex items-center justify-between">
+          <div>
+            <h2 className="text-xl font-bold">Arena</h2>
 
             <p className="text-sm text-white/40">
-              Collect energy and survive the arena.
+              WASD to move · Mouse to aim · Click to fire
             </p>
           </div>
 
-          <div className="overflow-hidden rounded-3xl border border-white/10 bg-black shadow-2xl">
-            <canvas ref={canvasRef} className="block h-auto w-full" />
-          </div>
+          {currentPlayer && (
+            <div className="flex items-center gap-5">
+              <div>
+                <p className="text-xs text-white/40">HEALTH</p>
 
-          {/* Mobile controls */}
+                <div className="mt-1 h-2 w-32 overflow-hidden rounded-full bg-white/10">
+                  <div
+                    className="h-full rounded-full bg-green-500 transition-all"
+                    style={{
+                      width: `${Math.max(
+                        0,
+                        (currentPlayer.health / currentPlayer.maxHealth) * 100,
+                      )}%`,
+                    }}
+                  />
+                </div>
+              </div>
 
-          <div className="mx-auto mt-6 grid w-48 grid-cols-3 gap-2 md:hidden">
-            <div />
+              <div>
+                <p className="text-xs text-white/40">SCORE</p>
 
-            <button
-              className="h-14 rounded-xl bg-white/10 text-xl active:bg-white/20"
-              onPointerDown={() => {
-                keys.current["arrowup"] = true;
-              }}
-              onPointerUp={() => {
-                keys.current["arrowup"] = false;
-              }}
-              onPointerLeave={() => {
-                keys.current["arrowup"] = false;
-              }}
-            >
-              ↑
-            </button>
+                <p className="font-bold">{currentPlayer.score}</p>
+              </div>
 
-            <div />
+              <div>
+                <p className="text-xs text-white/40">KILLS</p>
 
-            <button
-              className="h-14 rounded-xl bg-white/10 text-xl active:bg-white/20"
-              onPointerDown={() => {
-                keys.current["arrowleft"] = true;
-              }}
-              onPointerUp={() => {
-                keys.current["arrowleft"] = false;
-              }}
-              onPointerLeave={() => {
-                keys.current["arrowleft"] = false;
-              }}
-            >
-              ←
-            </button>
+                <p className="font-bold">{currentPlayer.kills}</p>
+              </div>
 
-            <button
-              className="h-14 rounded-xl bg-white/10 text-xl active:bg-white/20"
-              onPointerDown={() => {
-                keys.current["arrowdown"] = true;
-              }}
-              onPointerUp={() => {
-                keys.current["arrowdown"] = false;
-              }}
-              onPointerLeave={() => {
-                keys.current["arrowdown"] = false;
-              }}
-            >
-              ↓
-            </button>
+              <div>
+                <p className="text-xs text-white/40">STREAK</p>
 
-            <button
-              className="h-14 rounded-xl bg-white/10 text-xl active:bg-white/20"
-              onPointerDown={() => {
-                keys.current["arrowright"] = true;
-              }}
-              onPointerUp={() => {
-                keys.current["arrowright"] = false;
-              }}
-              onPointerLeave={() => {
-                keys.current["arrowright"] = false;
-              }}
-            >
-              →
-            </button>
-          </div>
-
-          <p className="mt-5 text-center text-xs text-white/30">
-            Desktop: WASD / Arrow Keys
-          </p>
+                <p className="font-bold text-orange-400">
+                  {currentPlayer.streak}
+                </p>
+              </div>
+            </div>
+          )}
         </div>
-      </section>
-      {gameOver && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 px-4 backdrop-blur-md">
-          <div className="w-full max-w-md rounded-3xl border border-white/10 bg-[#101016] p-8 text-center shadow-2xl">
-            <p className="text-sm font-medium tracking-widest text-red-400">
-              ARENA OVER
-            </p>
 
-            <h2 className="mt-3 text-4xl font-bold">Game Over</h2>
+        <div className="grid gap-5 lg:grid-cols-[1fr_240px]">
+          <div className="overflow-hidden rounded-3xl border border-white/10 bg-black shadow-2xl">
+            <canvas
+              ref={canvasRef}
+              width={WIDTH}
+              height={HEIGHT}
+              onMouseMove={handleMouseMove}
+              onClick={shoot}
+              className="block h-auto w-full cursor-crosshair"
+            />
+          </div>
 
-            <p className="mt-3 text-white/40">You ran out of health.</p>
+          <aside className="rounded-3xl border border-white/10 bg-white/3 p-5">
+            <h3 className="mb-4 font-bold">Scoreboard</h3>
 
-            <div className="mt-8 rounded-2xl bg-white/5 p-5">
-              <p className="text-sm text-white/40">Final Score</p>
+            <div className="space-y-3">
+              {[...(game?.players ?? [])]
+                .sort((a, b) => b.score - a.score)
+                .map((player, index) => (
+                  <div
+                    key={player.id}
+                    className="flex items-center justify-between rounded-xl bg-white/5 px-3 py-3"
+                  >
+                    <div className="flex items-center gap-3">
+                      <span className="text-xs text-white/30">{index + 1}</span>
 
-              <p className="mt-2 text-4xl font-bold text-violet-400">
-                {displayScore}
+                      <span
+                        className="h-3 w-3 rounded-full"
+                        style={{
+                          background: player.color,
+                        }}
+                      />
+
+                      <span className="max-w-25 truncate text-sm">
+                        {player.username}
+                      </span>
+                    </div>
+
+                    <span className="text-sm font-bold">{player.score}</span>
+                  </div>
+                ))}
+            </div>
+
+            <div className="mt-6 border-t border-white/10 pt-5">
+              <p className="text-xs text-white/40">PLAYERS</p>
+
+              <p className="mt-1 text-2xl font-bold">
+                {game?.players.length ?? 0}
+              </p>
+
+              <p className="mt-4 text-xs text-white/40">ENEMIES</p>
+
+              <p className="mt-1 text-2xl font-bold text-red-400">
+                {game?.enemies.length ?? 0}
               </p>
             </div>
+          </aside>
+        </div>
 
-            <div className="mt-6 grid grid-cols-2 gap-3">
-              <button
-                onClick={() => window.location.reload()}
-                className="rounded-xl bg-violet-500 px-4 py-3 font-semibold transition hover:bg-violet-400 active:scale-95"
-              >
-                Play Again
-              </button>
+        <div className="mt-5 flex justify-center gap-3 md:hidden">
+          <button
+            onPointerDown={() => (keys.current["arrowup"] = true)}
+            onPointerUp={() => (keys.current["arrowup"] = false)}
+            className="rounded-xl bg-white/10 px-6 py-4"
+          >
+            ↑
+          </button>
 
-              <button
-                onClick={() => router.push("/dashboard")}
-                className="rounded-xl bg-white/10 px-4 py-3 font-semibold transition hover:bg-white/15 active:scale-95"
-              >
-                Dashboard
-              </button>
-            </div>
+          <button
+            onPointerDown={() => (keys.current["arrowleft"] = true)}
+            onPointerUp={() => (keys.current["arrowleft"] = false)}
+            className="rounded-xl bg-white/10 px-6 py-4"
+          >
+            ←
+          </button>
+
+          <button
+            onPointerDown={() => (keys.current["arrowdown"] = true)}
+            onPointerUp={() => (keys.current["arrowdown"] = false)}
+            className="rounded-xl bg-white/10 px-6 py-4"
+          >
+            ↓
+          </button>
+
+          <button
+            onPointerDown={() => (keys.current["arrowright"] = true)}
+            onPointerUp={() => (keys.current["arrowright"] = false)}
+            className="rounded-xl bg-white/10 px-6 py-4"
+          >
+            →
+          </button>
+
+          <button
+            onPointerDown={shoot}
+            className="rounded-xl bg-violet-500 px-6 py-4 font-bold"
+          >
+            FIRE
+          </button>
+        </div>
+      </section>
+
+      {finished && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 p-5 backdrop-blur-md">
+          <div className="w-full max-w-md rounded-3xl border border-white/10 bg-[#101016] p-8 text-center">
+            <p className="text-sm tracking-widest text-violet-400">
+              MATCH COMPLETE
+            </p>
+
+            <h2 className="mt-3 text-4xl font-bold">Arena Champion</h2>
+
+            {winner && (
+              <>
+                <p className="mt-6 text-white/40">Winner</p>
+
+                <p
+                  className="mt-2 text-3xl font-bold"
+                  style={{
+                    color: winner.color,
+                  }}
+                >
+                  {winner.username}
+                </p>
+
+                <p className="mt-2 text-white/50">{winner.score} points</p>
+              </>
+            )}
+
+            <button
+              onClick={() => {
+                setFinished(false);
+                setWinner(null);
+                setGame(null);
+                socket.disconnect();
+                socket.connect();
+              }}
+              className="mt-8 w-full rounded-xl bg-violet-500 px-5 py-3 font-bold transition hover:bg-violet-400"
+            >
+              Play Again
+            </button>
           </div>
         </div>
       )}
     </main>
   );
+}
+
+function drawGame(ctx: CanvasRenderingContext2D, game: GameState | null) {
+  ctx.clearRect(0, 0, WIDTH, HEIGHT);
+
+  ctx.fillStyle = "#050509";
+
+  ctx.fillRect(0, 0, WIDTH, HEIGHT);
+
+  ctx.strokeStyle = "rgba(255,255,255,0.035)";
+
+  ctx.lineWidth = 1;
+
+  for (let x = 0; x <= WIDTH; x += 40) {
+    ctx.beginPath();
+    ctx.moveTo(x, 0);
+    ctx.lineTo(x, HEIGHT);
+    ctx.stroke();
+  }
+
+  for (let y = 0; y <= HEIGHT; y += 40) {
+    ctx.beginPath();
+    ctx.moveTo(0, y);
+    ctx.lineTo(WIDTH, y);
+    ctx.stroke();
+  }
+
+  if (!game) {
+    ctx.fillStyle = "rgba(255,255,255,0.5)";
+
+    ctx.font = "20px sans-serif";
+
+    ctx.textAlign = "center";
+
+    ctx.fillText("Connecting to arena...", WIDTH / 2, HEIGHT / 2);
+
+    return;
+  }
+
+  for (const obstacle of game.obstacles) {
+    ctx.fillStyle = "#15151f";
+
+    ctx.fillRect(obstacle.x, obstacle.y, obstacle.width, obstacle.height);
+
+    ctx.strokeStyle = "rgba(139,92,246,0.3)";
+
+    ctx.strokeRect(obstacle.x, obstacle.y, obstacle.width, obstacle.height);
+  }
+
+  for (const pickup of game.pickups) {
+    const color =
+      pickup.type === "health"
+        ? "#22c55e"
+        : pickup.type === "shield"
+          ? "#06b6d4"
+          : "#a855f7";
+
+    ctx.beginPath();
+
+    ctx.arc(
+      pickup.position.x,
+      pickup.position.y,
+      pickup.radius + 8,
+      0,
+      Math.PI * 2,
+    );
+
+    ctx.fillStyle = `${color}22`;
+
+    ctx.fill();
+
+    ctx.beginPath();
+
+    ctx.arc(
+      pickup.position.x,
+      pickup.position.y,
+      pickup.radius,
+      0,
+      Math.PI * 2,
+    );
+
+    ctx.fillStyle = color;
+
+    ctx.fill();
+  }
+
+  for (const projectile of game.projectiles) {
+    ctx.beginPath();
+
+    ctx.arc(
+      projectile.position.x,
+      projectile.position.y,
+      projectile.radius,
+      0,
+      Math.PI * 2,
+    );
+
+    ctx.fillStyle = projectile.color;
+
+    ctx.shadowBlur = 15;
+    ctx.shadowColor = projectile.color;
+
+    ctx.fill();
+
+    ctx.shadowBlur = 0;
+  }
+
+  for (const enemy of game.enemies) {
+    const radius =
+      enemy.type === "tank" ? 27 : enemy.type === "shooter" ? 20 : 18;
+
+    const color =
+      enemy.type === "tank"
+        ? "#f97316"
+        : enemy.type === "shooter"
+          ? "#eab308"
+          : "#ef4444";
+
+    ctx.beginPath();
+
+    ctx.arc(enemy.position.x, enemy.position.y, radius + 9, 0, Math.PI * 2);
+
+    ctx.fillStyle = `${color}20`;
+
+    ctx.fill();
+
+    ctx.beginPath();
+
+    ctx.arc(enemy.position.x, enemy.position.y, radius, 0, Math.PI * 2);
+
+    ctx.fillStyle = color;
+
+    ctx.fill();
+
+    const healthWidth = radius * 2;
+
+    ctx.fillStyle = "rgba(0,0,0,0.6)";
+
+    ctx.fillRect(
+      enemy.position.x - radius,
+      enemy.position.y - radius - 10,
+      healthWidth,
+      4,
+    );
+
+    ctx.fillStyle = "#22c55e";
+
+    ctx.fillRect(
+      enemy.position.x - radius,
+      enemy.position.y - radius - 10,
+      healthWidth * Math.max(0, enemy.health / enemy.maxHealth),
+      4,
+    );
+  }
+
+  for (const player of game.players) {
+    if (player.respawnAt !== null) {
+      continue;
+    }
+
+    const isCurrent = player.id === socket.id;
+
+    ctx.beginPath();
+
+    ctx.arc(player.position.x, player.position.y, 32, 0, Math.PI * 2);
+
+    ctx.fillStyle = `${player.color}20`;
+
+    ctx.fill();
+
+    if (player.shieldUntil > Date.now()) {
+      ctx.beginPath();
+
+      ctx.arc(player.position.x, player.position.y, 27, 0, Math.PI * 2);
+
+      ctx.strokeStyle = "#22d3ee";
+
+      ctx.lineWidth = 3;
+
+      ctx.stroke();
+    }
+
+    ctx.beginPath();
+
+    ctx.arc(player.position.x, player.position.y, 18, 0, Math.PI * 2);
+
+    ctx.fillStyle = player.color;
+
+    ctx.fill();
+
+    if (isCurrent) {
+      ctx.beginPath();
+
+      ctx.arc(player.position.x, player.position.y, 23, 0, Math.PI * 2);
+
+      ctx.strokeStyle = "#ffffff";
+
+      ctx.lineWidth = 2;
+
+      ctx.stroke();
+    }
+
+    const healthWidth = 44;
+
+    ctx.fillStyle = "rgba(0,0,0,0.7)";
+
+    ctx.fillRect(
+      player.position.x - healthWidth / 2,
+      player.position.y - 35,
+      healthWidth,
+      5,
+    );
+
+    ctx.fillStyle = "#22c55e";
+
+    ctx.fillRect(
+      player.position.x - healthWidth / 2,
+      player.position.y - 35,
+      healthWidth * Math.max(0, player.health / player.maxHealth),
+      5,
+    );
+
+    ctx.fillStyle = "#ffffff";
+
+    ctx.font = "11px sans-serif";
+
+    ctx.textAlign = "center";
+
+    ctx.fillText(player.username, player.position.x, player.position.y - 43);
+  }
 }

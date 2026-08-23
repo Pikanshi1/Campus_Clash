@@ -3,15 +3,19 @@ import cors from "cors";
 import authRoutes from "./routes/auth/authRoutes.js";
 
 const app = express();
+const allowedOrigins = (process.env.FRONTEND_URL || "http://localhost:3000")
+  .split(",")
+  .map((origin) => origin.trim())
+  .filter(Boolean);
 
 app.use(
   cors({
-    origin: "http://localhost:3000",
+    origin: allowedOrigins,
     credentials: true,
   })
 );
 
-app.use(express.json());
+app.use(express.json({ limit: "16kb" }));
 
 app.get("/api/health", (_req, res) => {
   res.json({

@@ -26,7 +26,7 @@ export default function RegisterPage() {
   const [loading, setLoading] = useState(false);
   return (
     <main className="relative flex min-h-screen items-center justify-center overflow-hidden bg-[#07070d] px-5 py-10 text-white">
-      <div className="pointer-events-none absolute left-1/2 top-1/2 h-[500px] w-[500px] -translate-x-1/2 -translate-y-1/2 rounded-full bg-violet-600/10 blur-[140px]" />
+      <div className="pointer-events-none absolute left-1/2 top-1/2 h-125 w-125 -translate-x-1/2 -translate-y-1/2 rounded-full bg-violet-600/10 blur-[140px]" />
 
       <Link
         href="/"
@@ -54,7 +54,7 @@ export default function RegisterPage() {
           </p>
         </div>
 
-        <div className="rounded-3xl border border-white/10 bg-white/[0.04] p-6 shadow-2xl backdrop-blur-xl sm:p-8">
+        <div className="rounded-3xl border border-white/10 bg-white/4 p-6 shadow-2xl backdrop-blur-xl sm:p-8">
           <form
             onSubmit={async (e: FormEvent) => {
               e.preventDefault();

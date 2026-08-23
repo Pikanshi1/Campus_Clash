@@ -62,7 +62,7 @@ export default function Home() {
         className="relative flex min-h-screen items-center overflow-hidden pt-20"
       >
         {/* Background glow */}
-        <div className="pointer-events-none absolute left-1/2 top-1/3 h-[500px] w-[500px] -translate-x-1/2 rounded-full bg-violet-600/20 blur-[140px]" />
+        <div className="pointer-events-none absolute left-1/2 top-1/3 h-125 w-125 -translate-x-1/2 rounded-full bg-violet-600/20 blur-[140px]" />
 
         <div className="relative mx-auto grid w-full max-w-7xl gap-14 px-5 py-20 sm:px-8 lg:grid-cols-2 lg:items-center">
           <motion.div
@@ -128,9 +128,9 @@ export default function Home() {
             transition={{ duration: 0.8, delay: 0.15 }}
             className="relative"
           >
-            <div className="absolute -inset-5 rounded-[2rem] bg-violet-500/10 blur-3xl" />
+            <div className="absolute -inset-5 rounded-4xl bg-violet-500/10 blur-3xl" />
 
-            <div className="relative overflow-hidden rounded-3xl border border-white/10 bg-white/[0.04] p-3 shadow-2xl backdrop-blur-xl">
+            <div className="relative overflow-hidden rounded-3xl border border-white/10 bg-white/4 p-3 shadow-2xl backdrop-blur-xl">
               <div className="flex items-center justify-between border-b border-white/10 px-4 py-3">
                 <div className="flex gap-1.5">
                   <span className="h-2.5 w-2.5 rounded-full bg-red-400" />
@@ -143,9 +143,9 @@ export default function Home() {
                 </span>
               </div>
 
-              <div className="relative aspect-[4/3] overflow-hidden rounded-2xl bg-gradient-to-br from-violet-950 via-[#10101c] to-cyan-950">
+              <div className="relative aspect-4/3 overflow-hidden rounded-2xl bg-linear-to-br from-violet-950 via-[#10101c] to-cyan-950">
                 {/* Arena grid */}
-                <div className="absolute inset-0 opacity-20 [background-image:linear-gradient(rgba(255,255,255,.15)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,.15)_1px,transparent_1px)] [background-size:40px_40px]" />
+                <div className="absolute inset-0 bg-[linear-gradient(rgba(255,255,255,.15)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,.15)_1px,transparent_1px)] bg-size-[40px_40px] opacity-20" />
 
                 {/* Decorative arena objects */}
                 <motion.div
@@ -276,7 +276,7 @@ export default function Home() {
 
             <p className="mx-auto mt-4 max-w-xl text-white/50">
               Your campus is waiting. The leaderboard is waiting.
-              The only question is whether you're ready.
+              The only question is whether you&apos;re ready.
             </p>
 
             <button className="mt-8 rounded-xl bg-white px-7 py-3.5 font-semibold text-black transition hover:bg-violet-200">
@@ -309,7 +309,7 @@ function FeatureCard({
     <motion.div
       whileHover={{ y: -6 }}
       transition={{ duration: 0.2 }}
-      className="group rounded-2xl border border-white/10 bg-white/[0.03] p-6 transition-colors hover:border-violet-400/20 hover:bg-white/[0.05]"
+      className="group rounded-2xl border border-white/10 bg-white/3 p-6 transition-colors hover:border-violet-400/20 hover:bg-white/5"
     >
       <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-violet-500/10 text-violet-400 transition group-hover:bg-violet-500/20">
         {icon}
