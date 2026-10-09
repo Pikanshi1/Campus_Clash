@@ -4,10 +4,11 @@ import { motion } from "framer-motion";
 import {
   ArrowRight,
   Gamepad2,
-  Trophy,
+  Shield,
   Users,
   Zap,
 } from "lucide-react";
+import Link from "next/link";
 
 export default function Home() {
   return (
@@ -35,23 +36,23 @@ export default function Home() {
             <a href="#how" className="text-sm text-white/70 transition hover:text-white">
               How It Works
             </a>
-            <a href="#leaderboard" className="text-sm text-white/70 transition hover:text-white">
-              Leaderboard
-            </a>
+            <Link href="/multiplayer" className="text-sm text-white/70 transition hover:text-white">
+              Rooms
+            </Link>
           </div>
 
           <div className="flex items-center gap-3">
-            <button className="hidden text-sm text-white/70 transition hover:text-white sm:block">
+            <Link href="/login" className="hidden text-sm text-white/70 transition hover:text-white sm:block">
               Login
-            </button>
+            </Link>
 
-            <button className="group flex items-center gap-2 rounded-xl bg-white px-4 py-2.5 text-sm font-semibold text-black transition hover:bg-violet-400">
+            <Link href="/play" className="group flex items-center gap-2 rounded-xl bg-white px-4 py-2.5 text-sm font-semibold text-black transition hover:bg-violet-400">
               Play Now
               <ArrowRight
                 size={16}
                 className="transition-transform group-hover:translate-x-1"
               />
-            </button>
+            </Link>
           </div>
         </div>
       </nav>
@@ -84,41 +85,23 @@ export default function Home() {
             </h1>
 
             <p className="mt-7 max-w-xl text-base leading-7 text-white/55 sm:text-lg">
-              A competitive gaming arena built for students.
-              Challenge players, climb the leaderboard, and prove
-              who owns the campus.
+              Play solo against enemy waves or join a room to battle other players in timed rounds.
             </p>
 
             <div className="mt-9 flex flex-col gap-3 sm:flex-row">
-              <button className="group flex items-center justify-center gap-2 rounded-xl bg-violet-500 px-6 py-3.5 font-semibold transition hover:bg-violet-400">
+              <Link href="/play" className="group flex items-center justify-center gap-2 rounded-xl bg-violet-500 px-6 py-3.5 font-semibold transition hover:bg-violet-400">
                 Enter the Arena
                 <ArrowRight
                   size={18}
                   className="transition-transform group-hover:translate-x-1"
                 />
-              </button>
+              </Link>
 
-              <button className="rounded-xl border border-white/10 bg-white/5 px-6 py-3.5 font-semibold text-white/80 backdrop-blur transition hover:bg-white/10">
-                View Leaderboard
-              </button>
+              <Link href="/multiplayer" className="rounded-xl border border-white/10 bg-white/5 px-6 py-3.5 font-semibold text-white/80 backdrop-blur transition hover:bg-white/10">
+                Join a Room
+              </Link>
             </div>
 
-            <div className="mt-10 flex flex-wrap gap-8 text-sm">
-              <div>
-                <p className="text-2xl font-bold">1.2K+</p>
-                <p className="text-white/40">Players</p>
-              </div>
-
-              <div>
-                <p className="text-2xl font-bold">24K+</p>
-                <p className="text-white/40">Matches</p>
-              </div>
-
-              <div>
-                <p className="text-2xl font-bold">98%</p>
-                <p className="text-white/40">Fun guaranteed</p>
-              </div>
-            </div>
           </motion.div>
 
           {/* Game preview */}
@@ -170,16 +153,12 @@ export default function Home() {
 
                 <div className="absolute right-[15%] top-[15%] flex items-center gap-2 rounded-lg border border-white/10 bg-black/30 px-3 py-2 text-xs backdrop-blur">
                   <span className="h-2 w-2 animate-pulse rounded-full bg-green-400" />
-                  LIVE
+                  ARENA
                 </div>
 
                 <div className="absolute bottom-4 left-4 right-4 flex justify-between rounded-xl border border-white/10 bg-black/30 px-4 py-3 backdrop-blur">
-                  <span className="text-xs text-white/60">
-                    SCORE
-                  </span>
-                  <span className="font-bold text-violet-300">
-                    2,450
-                  </span>
+                  <span className="text-xs text-white/60">ROUND PREVIEW</span>
+                  <span className="font-bold text-violet-300">ROOM MATCH</span>
                 </div>
               </div>
             </div>
@@ -200,29 +179,27 @@ export default function Home() {
             </h2>
 
             <p className="mt-4 text-white/50">
-              Campus Clash combines competitive gameplay with
-              progression, rankings, and a community built around
-              your campus.
+              Choose enemy-wave survival or create a private room for timed player-versus-player rounds.
             </p>
           </div>
 
           <div className="mt-12 grid gap-4 md:grid-cols-3">
             <FeatureCard
               icon={<Gamepad2 />}
-              title="Competitive Games"
-              description="Jump into fast-paced games designed for quick matches and endless replayability."
+              title="Two ways to play"
+              description="Survive enemy waves alone or battle other players in a private room."
             />
 
             <FeatureCard
-              icon={<Trophy />}
-              title="Climb the Ranks"
-              description="Earn points, build your reputation, and fight your way to the top."
+              icon={<Shield />}
+              title="Round-based rooms"
+              description="Room hosts set the round count and choose 60, 100, or 120-second rounds."
             />
 
             <FeatureCard
               icon={<Users />}
-              title="Campus Community"
-              description="Compete with friends and players from your campus."
+              title="Room codes"
+              description="Invite up to 15 other players to a room with a shareable code."
             />
           </div>
         </div>
@@ -243,10 +220,10 @@ export default function Home() {
 
           <div className="mt-16 grid gap-8 md:grid-cols-4">
             {[
-              ["01", "Join", "Create your player profile."],
-              ["02", "Choose", "Pick your game mode."],
-              ["03", "Clash", "Enter the arena and compete."],
-              ["04", "Conquer", "Rise through the rankings."],
+              ["01", "Choose", "Play Solo or Multiplayer."],
+              ["02", "Create", "Host a room or enter a room code."],
+              ["03", "Compete", "Move, aim, and shoot during each round."],
+              ["04", "Review", "See your rank and personal results."],
             ].map(([number, title, description]) => (
               <div key={number} className="relative">
                 <span className="text-5xl font-black text-white/10">
@@ -275,13 +252,12 @@ export default function Home() {
             </h2>
 
             <p className="mx-auto mt-4 max-w-xl text-white/50">
-              Your campus is waiting. The leaderboard is waiting.
-              The only question is whether you&apos;re ready.
+              Set up a private room, choose the round settings, and start when your players are ready.
             </p>
 
-            <button className="mt-8 rounded-xl bg-white px-7 py-3.5 font-semibold text-black transition hover:bg-violet-200">
+            <Link href="/play" className="mt-8 inline-block rounded-xl bg-white px-7 py-3.5 font-semibold text-black transition hover:bg-violet-200">
               Play Campus Clash
-            </button>
+            </Link>
           </div>
         </div>
       </section>

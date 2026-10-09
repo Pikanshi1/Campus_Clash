@@ -14,7 +14,7 @@ export const PROJECTILE_LIFETIME = 1.5;
 
 export const ENEMY_CONTACT_DISTANCE = 38;
 
-export const MATCH_DURATION = 300;
+export const MATCH_DURATION = 100;
 
 export const RESPAWN_TIME = 3000;
 

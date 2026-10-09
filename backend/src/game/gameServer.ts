@@ -33,61 +33,35 @@ import {
   Player,
 } from "./types";
 
-const rooms =
-  new Map<string, GameRoom>();
-
-const ROOM_ID =
-  "main-arena";
+const rooms = new Map<string, GameRoom>();
+const socketRooms = new Map<string, string>();
 
 export function setupGameServer(
   io: Server
 ) {
-  let room =
-    rooms.get(ROOM_ID);
-
-  if (!room) {
-    room =
-      createGameRoom(
-        ROOM_ID
-      );
-
-    rooms.set(
-      ROOM_ID,
-      room
-    );
-  }
-
   io.on(
     "connection",
     (socket: Socket) => {
       socket.on(
         "join_game",
         ({
-          username,
+          mode,
         }: {
-          username: string;
+          mode?: "solo" | "multiplayer";
         }) => {
-          const currentRoom =
-            rooms.get(
-              ROOM_ID
-            );
-
-          if (!currentRoom) {
+          if (mode !== "solo") {
+            socket.emit("solo_error", { message: "Choose Solo or create/join a multiplayer room." });
             return;
           }
 
-          if (currentRoom.status === "finished") {
-            resetGameRoom(currentRoom);
-          }
+          const roomId = `solo-${socket.id}`;
+          const currentRoom = createGameRoom(roomId);
+          rooms.set(roomId, currentRoom);
 
           const player =
             createPlayer(
               socket.id,
-              username ||
-                `Player-${socket.id.slice(
-                  0,
-                  5
-                )}`,
+              String(socket.data.username || "Player"),
               currentRoom.players.size
             );
 
@@ -96,12 +70,12 @@ export function setupGameServer(
             player
           );
 
-          socket.join(
-            ROOM_ID
-          );
+          socket.join(roomId);
 
           currentRoom.status =
             "running";
+
+          socketRooms.set(socket.id, roomId);
 
           if (
             currentRoom.players.size ===
@@ -126,9 +100,7 @@ export function setupGameServer(
             )
           );
 
-          io.to(
-            ROOM_ID
-          ).emit(
+          io.to(roomId).emit(
             "game_state",
             serializeRoom(
               currentRoom
@@ -146,12 +118,10 @@ export function setupGameServer(
           x: number;
           y: number;
         }) => {
-          const currentRoom =
-            rooms.get(
-              ROOM_ID
-            );
+          const roomId = socketRooms.get(socket.id);
+          const currentRoom = roomId ? rooms.get(roomId) : undefined;
 
-          if (!currentRoom) {
+          if (!roomId || !currentRoom) {
             return;
           }
 
@@ -201,10 +171,8 @@ export function setupGameServer(
           x: number;
           y: number;
         }) => {
-          const currentRoom =
-            rooms.get(
-              ROOM_ID
-            );
+          const roomId = socketRooms.get(socket.id);
+          const currentRoom = roomId ? rooms.get(roomId) : undefined;
 
           if (!currentRoom) {
             return;
@@ -233,12 +201,10 @@ export function setupGameServer(
       socket.on(
         "disconnect",
         () => {
-          const currentRoom =
-            rooms.get(
-              ROOM_ID
-            );
+          const roomId = socketRooms.get(socket.id);
+          const currentRoom = roomId ? rooms.get(roomId) : undefined;
 
-          if (!currentRoom) {
+          if (!roomId || !currentRoom) {
             return;
           }
 
@@ -246,21 +212,15 @@ export function setupGameServer(
             socket.id
           );
 
-          io.to(
-            ROOM_ID
-          ).emit(
-            "game_state",
-            serializeRoom(
-              currentRoom
-            )
-          );
+          socketRooms.delete(socket.id);
+
+          rooms.delete(roomId);
         }
       );
     }
   );
 
-  let previous =
-    Date.now();
+  let previous = Date.now();
 
   setInterval(
     () => {
@@ -276,12 +236,9 @@ export function setupGameServer(
 
       previous = now;
 
-      updateRoom(
-        io,
-        room!,
-        delta,
-        now
-      );
+      for (const room of rooms.values()) {
+        updateRoom(io, room, delta, now);
+      }
     },
     1000 / 30
   );

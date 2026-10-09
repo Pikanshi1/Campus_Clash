@@ -1,19 +1,10 @@
 import express from "express";
 import cors from "cors";
+import { corsOptions } from "./config/cors.js";
 import authRoutes from "./routes/auth/authRoutes.js";
 
 const app = express();
-const allowedOrigins = (process.env.FRONTEND_URL || "http://localhost:3000")
-  .split(",")
-  .map((origin) => origin.trim())
-  .filter(Boolean);
-
-app.use(
-  cors({
-    origin: allowedOrigins,
-    credentials: true,
-  })
-);
+app.use(cors(corsOptions));
 
 app.use(express.json({ limit: "16kb" }));
 

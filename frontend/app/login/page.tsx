@@ -78,8 +78,12 @@ const [loading, setLoading] = useState(false);
       });
 
       localStorage.setItem("campus_clash_token", data.token);
-
-      router.push("/dashboard");
+      localStorage.setItem("campus_clash_username", data.user.username);
+      const nextPath = new URLSearchParams(window.location.search).get("next");
+      const destination = nextPath?.startsWith("/") && !nextPath.startsWith("//")
+        ? nextPath
+        : "/dashboard";
+      router.push(destination);
     } catch (error) {
       setError(
         error instanceof Error
@@ -161,6 +165,13 @@ const [loading, setLoading] = useState(false);
             >
               Create one
             </Link>
+             <br />
+             <Link
+               href="/forgot-password"
+               className="font-medium text-violet-400 transition hover:text-violet-300"
+             >
+               Forgot your password?
+             </Link>
           </p>
         </div>
       </motion.div>

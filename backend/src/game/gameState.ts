@@ -2,6 +2,7 @@ import {
   COLORS,
   GAME_HEIGHT,
   GAME_WIDTH,
+  MATCH_DURATION,
   MAX_ENEMIES,
   PLAYER_MAX_HEALTH,
   RESPAWN_TIME,
@@ -63,7 +64,7 @@ export function createGameRoom(
       },
     ],
     startedAt: now,
-    endsAt: now + 300000,
+    endsAt: now + MATCH_DURATION * 1000,
     wave: 1,
     nextWaveAt:
       now + WAVE_INTERVAL,
@@ -89,7 +90,7 @@ export function resetGameRoom(room: GameRoom) {
   room.projectiles.clear();
   room.pickups.clear();
   room.startedAt = now;
-  room.endsAt = now + 300000;
+  room.endsAt = now + MATCH_DURATION * 1000;
   room.wave = 1;
   room.nextWaveAt = now + WAVE_INTERVAL;
 

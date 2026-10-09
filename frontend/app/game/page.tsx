@@ -105,7 +105,15 @@ export default function GamePage() {
       return;
     }
 
-    const storedUsername = localStorage.getItem("campus_clash_username");
+    if (localStorage.getItem("campus_clash_rules_accepted") !== "true") {
+      router.replace("/play");
+      return;
+    }
+
+    const selectedMode = new URLSearchParams(window.location.search).get("mode") === "solo"
+      ? "solo"
+      : "multiplayer";
+    socket.auth = { token };
 
     socket.connect();
 
@@ -113,7 +121,7 @@ export default function GamePage() {
       setConnected(true);
 
       socket.emit("join_game", {
-        username: storedUsername || "Player",
+        mode: selectedMode,
       });
     };
 
@@ -353,7 +361,9 @@ export default function GamePage() {
           <div>
             <h1 className="text-lg font-bold">Campus Clash</h1>
 
-            <p className="text-xs text-white/40">Multiplayer Arena</p>
+            <p className="text-xs text-white/40">
+              {game?.id.startsWith("solo-") ? "Solo Arena" : "Multiplayer Arena"}
+            </p>
           </div>
 
           <div className="flex items-center gap-6">

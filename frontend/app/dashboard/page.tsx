@@ -162,7 +162,7 @@ export default function DashboardPage() {
             </p>
 
             <button
-              onClick={() => router.push("/game")}
+              onClick={() => router.push("/play")}
               className="mt-7 flex items-center gap-2 rounded-xl bg-violet-500 px-6 py-3 font-semibold transition hover:bg-violet-400 active:scale-95"
             >
               <Gamepad2 size={18} />
