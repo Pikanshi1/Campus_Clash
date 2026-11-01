@@ -1,236 +1,432 @@
-# Campus Clash
+# 🎮 Campus Clash
 
-Campus Clash is a real-time multiplayer browser game with user authentication,
-single-player gameplay, multiplayer rooms, server-side combat, and persistent
-room snapshots.
+### A Real-Time Multiplayer Browser Game
 
-The project is split into two applications:
+**Campus Clash** is a browser-based multiplayer gaming platform where players can jump into single-player matches or compete with others in real time.
 
-- `backend/` - Express, Socket.IO, Prisma, and PostgreSQL API/server
-- `frontend/` - Next.js, React, Phaser, and the browser UI
+Built with **Next.js, Phaser, Express, Socket.IO, Prisma and PostgreSQL**, the project combines browser-based gameplay with authenticated users, multiplayer rooms, server-authoritative combat and persistent game state.
 
-## Features
+[![GitHub](https://img.shields.io/badge/GitHub-Pikanshi1%2FCampus__Clash-181717?logo=github)](https://github.com/Pikanshi1/Campus_Clash)
+![Next.js](https://img.shields.io/badge/Next.js-16-black?logo=next.js)
+![React](https://img.shields.io/badge/React-19-61DAFB?logo=react)
+![TypeScript](https://img.shields.io/badge/TypeScript-5-3178C6?logo=typescript)
+![Node.js](https://img.shields.io/badge/Node.js-20%2B-339933?logo=node.js)
+![Socket.IO](https://img.shields.io/badge/Socket.IO-Real--Time-black?logo=socket.io)
+![PostgreSQL](https://img.shields.io/badge/PostgreSQL-Database-4169E1?logo=postgresql)
 
-- User registration and login
-- JWT-based API and Socket.IO authentication
-- Password reset email flow
-- Player dashboard and progression statistics
-- Single-player game mode
-- Multiplayer rooms with server-authoritative combat
-- Persistent multiplayer room snapshots in PostgreSQL
-- CORS configuration for local and production frontend origins
+---
 
-## Requirements
+## ✨ Features
+
+### 🔐 Authentication & Account Management
+- User registration and login.
+- JWT-based authentication.
+- Protected API routes.
+- Socket.IO connection authentication.
+- Password reset through email.
+- Secure password hashing.
+
+### 🎯 Gaming Experience
+- Browser-based gameplay powered by Phaser.
+- Single-player game mode.
+- Multiplayer gameplay.
+- Interactive game interface.
+- Player dashboard and progression statistics.
+
+### ⚔️ Real-Time Multiplayer
+- Create and join multiplayer rooms.
+- Real-time communication using Socket.IO.
+- Server-authoritative combat handling.
+- Persistent multiplayer room snapshots.
+- PostgreSQL-backed game state persistence.
+
+### 🛠️ Backend & Security
+- RESTful API using Express.
+- Database management with Prisma ORM.
+- Configurable CORS for frontend origins.
+- Environment-based configuration.
+- Password reset email integration.
+
+---
+
+## 🧰 Tech Stack
+
+| Category | Technologies |
+|---|---|
+| Frontend Framework | Next.js 16 |
+| UI Library | React 19 |
+| Language | TypeScript |
+| Game Engine | Phaser 4 |
+| Animations | Framer Motion |
+| Styling | Tailwind CSS 4 |
+| Icons | Lucide React |
+| Backend | Node.js, Express 5 |
+| Real-Time Communication | Socket.IO |
+| Authentication | JWT, bcryptjs |
+| ORM | Prisma 7 |
+| Database | PostgreSQL |
+| Email Service | Nodemailer |
+| Deployment | Vercel, Render |
+| Database Hosting | Neon / PostgreSQL |
+
+---
+
+## 🏗️ Architecture
+
+Campus Clash follows a separate frontend and backend architecture.
+
+```text
+                 CAMPUS CLASH
+                       |
+          +------------+------------+
+          |                         |
+       FRONTEND                  BACKEND
+          |                         |
+     Next.js + React           Express + Node.js
+          |                         |
+       Phaser                   REST API
+          |                         |
+     Game Interface             JWT Auth
+          |                         |
+          +------ Socket.IO --------+
+                                    |
+                          Server-side Game Logic
+                                    |
+                               Prisma ORM
+                                    |
+                               PostgreSQL
+```
+
+### Project Structure
+
+```text
+Campus_Clash/
+│
+├── backend/
+│   ├── prisma/
+│   │   ├── migrations/
+│   │   └── schema.prisma
+│   │
+│   ├── src/
+│   │   ├── config/
+│   │   ├── controllers/
+│   │   ├── game/
+│   │   ├── middleware/
+│   │   ├── routes/
+│   │   ├── services/
+│   │   ├── app.ts
+│   │   └── server.ts
+│   │
+│   ├── package.json
+│   └── tsconfig.json
+│
+├── frontend/
+│   ├── app/
+│   │   ├── dashboard/
+│   │   ├── game/
+│   │   ├── multiplayer/
+│   │   ├── play/
+│   │   ├── login/
+│   │   ├── register/
+│   │   ├── forgot-password/
+│   │   └── reset-password/
+│   │
+│   ├── lib/
+│   ├── package.json
+│   └── tsconfig.json
+│
+└── README.md
+```
+
+---
+
+## ⚙️ Getting Started
+
+Follow these instructions to run Campus Clash locally.
+
+### Prerequisites
+
+Make sure you have installed:
 
 - Node.js 20 or newer
 - npm
 - PostgreSQL database
+- Git
 
-## Project setup
+### 1. Clone the Repository
 
-Install dependencies for both applications:
+```bash
+git clone https://github.com/Pikanshi1/Campus_Clash.git
+
+cd Campus_Clash
+```
+
+### 2. Install Dependencies
+
+Install backend dependencies:
 
 ```bash
 cd backend
 npm ci
+```
 
+Install frontend dependencies:
+
+```bash
 cd ../frontend
 npm ci
 ```
 
-### Backend environment
+---
 
-Create `backend/.env`:
+## 🔑 Environment Configuration
+
+### Backend Configuration
+
+Create a `.env` file inside the `backend/` directory.
 
 ```env
 DATABASE_URL=postgresql://USER:PASSWORD@HOST:5432/DATABASE?sslmode=require
+
 PORT=5000
 HOST=0.0.0.0
 NODE_ENV=development
-JWT_SECRET=replace-with-a-long-random-secret
+
+JWT_SECRET=your_long_random_secret
+
 FRONTEND_URL=http://localhost:3000
 
-# Required only for password reset emails
+# SMTP configuration for password reset emails
 SMTP_HOST=smtp.example.com
 SMTP_PORT=587
-SMTP_USER=your-smtp-user
-SMTP_PASSWORD=your-smtp-password
+SMTP_USER=your_email@example.com
+SMTP_PASSWORD=your_email_password
 SMTP_FROM=no-reply@example.com
 ```
 
-Never commit `.env` files or real credentials. The repository ignores local
-environment files by default.
+**Environment variable notes:**
 
-Apply database migrations and generate the Prisma client:
+- `DATABASE_URL`: PostgreSQL connection string.
+- `JWT_SECRET`: Secret used for JWT signing and verification.
+- `FRONTEND_URL`: Allowed frontend origin.
+- SMTP variables: Required for password reset email functionality.
 
-```bash
-cd backend
-npm run db:deploy
-npx prisma generate
-```
+Use your actual database and SMTP provider credentials.
 
-### Frontend environment
+### Frontend Configuration
 
-Create `frontend/.env.local`:
+Create `.env.local` inside the `frontend/` directory.
 
 ```env
 NEXT_PUBLIC_API_URL=http://localhost:5000
 ```
 
-`NEXT_PUBLIC_API_URL` must be the public backend URL in production.
+This variable specifies the backend API URL.
 
-## Running locally
+For production, replace it with your deployed backend URL.
 
-Start the backend:
+**Important:** Never expose database credentials, JWT secrets or SMTP passwords in frontend environment variables.
 
-```bash
-cd backend
-npm run dev
-```
+---
 
-Start the frontend in a second terminal:
+## 🗄️ Database Setup
 
-```bash
-cd frontend
-npm run dev
-```
+Campus Clash uses Prisma ORM with PostgreSQL.
 
-Open [http://localhost:3000](http://localhost:3000).
-
-The backend health endpoint is available at
-[http://localhost:5000/api/health](http://localhost:5000/api/health).
-
-## Validation commands
-
-Backend tests:
-
-```bash
-cd backend
-npm test
-```
-
-Backend production build:
-
-```bash
-cd backend
-npm run build
-```
-
-Frontend lint:
-
-```bash
-cd frontend
-npm run lint
-```
-
-Frontend production build:
-
-```bash
-cd frontend
-npm run build
-```
-
-## Deployment
-
-The recommended deployment is:
-
-- Backend: Render Web Service
-- Frontend: Vercel
-- Database: hosted PostgreSQL, such as Neon
-
-### Deploy the backend to Render
-
-Create a Render Web Service connected to this repository with:
-
-- Root directory: `backend`
-- Build command: `npm ci && npm run build`
-- Start command: `npm start`
-
-Set these environment variables in Render:
-
-```env
-DATABASE_URL=<production PostgreSQL connection string>
-JWT_SECRET=<long random production secret>
-FRONTEND_URL=https://<your-vercel-domain>
-NODE_ENV=production
-HOST=0.0.0.0
-PORT=<provided by Render, if required by the service>
-```
-
-For password reset support, also configure `SMTP_HOST`, `SMTP_PORT`,
-`SMTP_USER`, `SMTP_PASSWORD`, and optionally `SMTP_FROM`.
-
-Run the Prisma migrations against the production database before serving
-traffic:
+From the `backend/` directory, run:
 
 ```bash
 npm run db:deploy
 ```
 
-The backend must run as a persistent service because multiplayer gameplay uses
-Socket.IO WebSocket connections.
+Generate the Prisma client:
 
-### Deploy the frontend to Vercel
-
-Create a Vercel project connected to this repository with:
-
-- Root directory: `frontend`
-- Framework preset: Next.js
-- Build command: `npm run build`
-
-Set this Vercel environment variable:
-
-```env
-NEXT_PUBLIC_API_URL=https://<your-render-backend-domain>
+```bash
+npx prisma generate
 ```
 
-After the Vercel domain is known, set the same domain in the Render
-`FRONTEND_URL` variable and redeploy or restart the backend.
+Make sure your PostgreSQL database is accessible before running migrations.
 
-### Production checks
+---
 
-After deployment, verify:
+## 🚀 Running the Application
 
-1. `https://<your-render-backend-domain>/api/health` returns a successful JSON
-   response.
-2. The frontend can register and log in.
-3. Multiplayer connects through Socket.IO.
-4. Password reset works if SMTP is configured.
-5. Render logs show no database, CORS, or JWT configuration errors.
+You need two separate terminals to run both applications.
 
-## Security notes
+### Terminal 1: Backend
 
-- Use a unique, high-entropy `JWT_SECRET` in production.
-- Do not expose `DATABASE_URL`, SMTP credentials, or JWT secrets to Vercel.
-- Only `NEXT_PUBLIC_API_URL` belongs in the frontend environment.
-- Keep `FRONTEND_URL` set to the exact production frontend origin.
-- Review database backups and connection pooling settings with the PostgreSQL
-  provider before launch.
+```bash
+cd backend
+
+npm run dev
+```
+
+The backend runs on:
+
+```text
+http://localhost:5000
+```
+
+Health check:
+
+```text
+http://localhost:5000/api/health
+```
+
+### Terminal 2: Frontend
+
+```bash
+cd frontend
+
+npm run dev
+```
+
+Open the application:
+
+```text
+http://localhost:3000
+```
+
+You can now explore Campus Clash in your browser.
+
+---
+
+## 🧪 Testing & Validation
+
+The project includes backend tests for multiplayer game logic and CORS configuration.
+
+### Backend Tests
+
+```bash
+cd backend
+
+npm test
+```
+
+### Backend Production Build
+
+```bash
+npm run build
+```
+
+### Frontend Linting
+
+```bash
+cd frontend
+
+npm run lint
+```
+
+### Frontend Production Build
+
+```bash
+npm run build
+```
+
+---
+
+## ☁️ Deployment
+
+The recommended production architecture separates the frontend, backend and database.
+
+| Component | Hosting |
+|---|---|
+| Frontend | Vercel |
+| Backend | Render |
+| Database | Neon PostgreSQL |
+
+### Backend — Render
+
+Create a new Render Web Service connected to your GitHub repository.
+
+Configuration:
+
+| Setting | Value |
+|---|---|
+| Root Directory | `backend` |
+| Build Command | `npm ci && npm run build` |
+| Start Command | `npm start` |
+
+Configure the following environment variables:
+
+```env
+DATABASE_URL=your_production_database_url
+JWT_SECRET=your_production_secret
+FRONTEND_URL=https://your-frontend.vercel.app
+NODE_ENV=production
+HOST=0.0.0.0
+```
+
+Also configure the SMTP variables if password reset emails are required.
+
+Run database migrations against the production database:
+
+```bash
+npm run db:deploy
+```
+
+**Important:** Use a persistent backend service that supports WebSocket connections because multiplayer gameplay relies on Socket.IO.
+
+### Frontend — Vercel
+
+Import the GitHub repository into Vercel.
+
+Configuration:
+
+| Setting | Value |
+|---|---|
+| Root Directory | `frontend` |
+| Framework | Next.js |
+| Build Command | `npm run build` |
+
+Add the environment variable:
+
+```env
+NEXT_PUBLIC_API_URL=https://your-backend.onrender.com
+```
+
+After deployment, configure the exact Vercel frontend origin in the backend's `FRONTEND_URL` environment variable.
+
+---
+
+## 🔒 Security Considerations
+
+- Never commit `.env` or `.env.local` files.
+- Use strong, unique JWT secrets in production.
+- Keep database credentials and SMTP credentials on the backend.
+- Configure CORS to allow only trusted frontend origins.
+- Authenticate Socket.IO connections.
+- Keep production dependencies and database migrations updated.
+- Configure database backups and connection pooling.
 
 ---
 
 ## 👩‍💻 Author
 
-### Pikanshi Mehta
+**Pikanshi Mehta**
 
-**3rd Year Computer Science Engineering Student — NIT Hamirpur**
+Third-Year Computer Science Engineering Student  
+National Institute of Technology, Hamirpur
 
-Interested in:
+Interested in building scalable applications and exploring:
 
 - Full-Stack Development
 - Artificial Intelligence & Machine Learning
-- DSA & Problem Solving
-- Open Source
-- Building impactful products
+- Data Structures & Algorithms
+- Open Source Development
+
+**GitHub:** [@Pikanshi1](https://github.com/Pikanshi1)
 
 ---
 
 ## ⭐ Support
 
-If you find this project interesting, consider giving the repository a ⭐ on
-GitHub!
+If you find Campus Clash interesting, consider giving the repository a star ⭐.
+
+Contributions, suggestions and feedback are welcome!
 
 ---
 
-> **Build skills. Build ideas. Build your future. 🚀**
-
+<p align="center">
+  <b>Built with passion, code, and a competitive spirit. 🎮</b>
+</p>
