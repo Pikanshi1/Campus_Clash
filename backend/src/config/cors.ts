@@ -16,7 +16,7 @@ const configuredOrigins = (process.env.FRONTEND_URL || "")
 
 const developmentOrigins = process.env.NODE_ENV === "production"
   ? []
-  : ["http://localhost:3000", "http://localhost:5173"];
+  : ["http://localhost:3000", "http://localhost:5173,https://campus-clash-zeta.vercel.app"];
 
 export function createCorsConfig(frontendUrl: string | undefined, nodeEnvironment: string | undefined) {
   const configuredOrigins = (frontendUrl || "")
